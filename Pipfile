@@ -1,0 +1,17 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+beautifulsoup4 = "*"
+lxml = "*"
+numpy = "*"
+pandas = "*"
+requests = "*"
+streamlit = "*"
+
+[requires]
+python_version = "3.7"
+
+[dev-packages]
