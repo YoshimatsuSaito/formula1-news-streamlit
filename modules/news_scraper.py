@@ -4,6 +4,7 @@ import os
 import re
 import sys
 from datetime import datetime, timedelta
+from pytz import timezone
 
 import pandas as pd
 import requests
@@ -16,7 +17,8 @@ class NewsScraper():
     """
     def __init__(self, page_nums=8):
         # 比較演算子を使用するために以下のように定義する
-        self.today = dt.datetime(datetime.today().year, datetime.today().month, datetime.today().day, 0, 0, 0)
+        now = datetime.now(timezone("Asia/Tokyo"))
+        self.today = dt.datetime(now.year, now.month, now.day, 0, 0, 0)
         # 何日前までさかのぼるか指定
         gb = timedelta(days=1)
         self.gb_day = self.today - gb
