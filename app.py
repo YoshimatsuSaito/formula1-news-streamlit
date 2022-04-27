@@ -4,7 +4,7 @@ from modules.news_scraper import NewsScraper
 
 def main():
     st.title("Formula 1")
-    st.header("Today's News")
+    st.header("Today and yesterday's News")
     ns = NewsScraper()
     with st.expander("Target to scrape"):
         for site_name in ns.dict_site_structure.keys():

@@ -98,7 +98,7 @@ class NewsScraper():
     def scrape_news(self, site_name):
         """
         サイトの情報を抜き出す関数
-        page_numsページ数を上限まで確認し、直近3日間のデータが得られたらスクレイピングを終える
+        page_numsページ数を上限まで確認、もしくは、gb_day以前のデータが得られる、のいずれかが満たされたらスクレイピングを終える
         """
         site_info = self.dict_site_structure[site_name]
         url = site_info["url"]
@@ -115,7 +115,8 @@ class NewsScraper():
         page = site_info["page_start"]
         page_add = site_info["page_add"]
         titles, links, ymds = [], [], []
-        page_day = dt.datetime(datetime.today().year, datetime.today().month, datetime.today().day, 0, 0, 0)
+        # 取得したページの日付情報の初期値は本日の日付とする
+        page_day = self.today
         while (page_day >= self.gb_day) and (page <= self.page_nums):
             if page == -1000: page = ""
             headers_dic = {"User-Agent": "hoge"}
@@ -124,6 +125,7 @@ class NewsScraper():
             titles += [get_title(x) for x in soup.select(scrape_title)] # 記事タイトル
             links += [f"{link_head}{get_link(x)}" for x in soup.select(scrape_link)]# 記事リンク
             ymds += [datetime.strptime(get_date(x), strptime_format) for x in soup.select(scrape_date)] # 日付(一つの記事に複数の日付はつかないことを前提とする)
+            # 取得したページの日付で更新する
             page_day = ymds[-1]
             if page!="":
                 page += page_add
@@ -151,7 +153,7 @@ class NewsScraper():
             self.list_news_link, 
             self.list_ymd
         ):
-            if ymd == self.today:
+            if ymd >= self.gb_day:
                 self.list_site_name_today.append(site_name)
                 self.list_news_title_today.append(news_title)
                 self.list_news_link_today.append(news_link)
