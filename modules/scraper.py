@@ -10,6 +10,19 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup as bs
 
+
+def get_nextgp_schedule():
+    """
+    次のグランプリの日程を取得して返す便利用関数
+    """
+    url = "https://formula1-data.com/race/gp"
+    r = requests.get(url)
+    soup = bs(r.text, "lxml")
+    list_event_name = [x.contents[0] for x in soup.select(".nextGp__result h3")]
+    list_event_time = [x.contents[0] for x in soup.select(".nextGp__result time")]
+    gp_name = soup.select(".nextGp__title")[0].contents[2]
+    return list_event_name, list_event_time, gp_name
+
 class NewsScraper():
     """
     スクレイピングを行うクラス

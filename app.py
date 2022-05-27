@@ -1,9 +1,18 @@
 import streamlit as st
 
-from modules.news_scraper import NewsScraper
+from modules.scraper import NewsScraper, get_nextgp_schedule
 
 def main():
     st.title("Formula 1")
+    st.markdown("---")
+    list_event_name, list_event_time, gp_name = get_nextgp_schedule()
+    st.header(f"Next Grand Prix ({gp_name}) Schedule")
+    cols = st.columns(len(list_event_name))
+    for idx, event_name, event_time in zip(range(len(cols)), list_event_name, list_event_time):
+        with cols[idx]:
+            st.caption(event_name)
+            st.info(event_time)
+    st.markdown("---")
     st.header("Today and yesterday's news")
     ns = NewsScraper()
     with st.expander("Target to scrape"):
