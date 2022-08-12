@@ -2,7 +2,7 @@ import streamlit as st
 
 from modules.scraper import NewsScraper, get_nextgp_schedule
 
-@st.cache(ttl=60*5)
+@st.cache(ttl=60*5, show_spinner=False)
 def get_news(ns):
     """
     5分間はscrapingの状態をキャッシュする
