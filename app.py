@@ -2,6 +2,16 @@ import streamlit as st
 
 from modules.scraper import NewsScraper, get_nextgp_schedule
 
+@st.cache(ttl=60*5)
+def get_news(ns):
+    """
+    5分間はscrapingの状態をキャッシュする
+    ニュースを見るというアクション単位では都度scrapingをしてほしいが、
+    一回のアクションの最中にブラウザの切り替えなどをした際にいちいちやり直される必要はない
+    """
+    ns.get_news_info()
+    return ns
+
 def main():
     st.title("Formula 1")
     st.markdown("---")
@@ -23,7 +33,8 @@ def main():
                 unsafe_allow_html=True
             )
     with st.spinner('Now scraping...'):
-        ns.get_news_info()
+        # 5分間のキャッシュ情報
+        ns = get_news(ns)
         if len(ns.df_today_news["site_name"]) > 0:
             for site_name in ns.df_today_news["site_name"].unique():
                 df_target = ns.df_today_news[ns.df_today_news["site_name"]==site_name].reset_index(drop=True)
