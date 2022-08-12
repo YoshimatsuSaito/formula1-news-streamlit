@@ -46,13 +46,13 @@ class NewsScraper():
                     "scrape_date":".content>.contentitem", "get_date":lambda x: x.contents[0],
                     "strptime_format":"%Y年%m月%d日", "link_head":"",
                     "page_start":1, "page_add":1},
-            "BELLAGARA": 
-                {"url":"https://bellagara.com/news", "page_format":"/page/", "tail_format":"", 
-                    "scrape_title":".uk-card-title", "get_title":lambda x: x.contents[0].contents[0], 
-                    "scrape_link":".uk-card-title", "get_link":lambda x: x.contents[0].attrs['href'], 
-                    "scrape_date":".uk-width-expand>.uk-card-body>.uk-text-meta.uk-margin-small>time", "get_date":lambda x: x.contents[0][:10],
-                    "strptime_format":"%Y.%m.%d", "link_head":"",
-                    "page_start":1, "page_add":1},
+            # "BELLAGARA": 
+            #     {"url":"https://bellagara.com/news", "page_format":"/page/", "tail_format":"", 
+            #         "scrape_title":".uk-card-title", "get_title":lambda x: x.contents[0].contents[0], 
+            #         "scrape_link":".uk-card-title", "get_link":lambda x: x.contents[0].attrs['href'], 
+            #         "scrape_date":".uk-width-expand>.uk-card-body>.uk-text-meta.uk-margin-small>time", "get_date":lambda x: x.contents[0][:10],
+            #         "strptime_format":"%Y.%m.%d", "link_head":"",
+            #         "page_start":1, "page_add":1},
             "motorsport.com":
                 {"url":"https://jp.motorsport.com/f1/news/", "page_format":"?p=", "tail_format":"", 
                     "scrape_title":".ms-content_main .ms-item_title>.ms-item_link--text", "get_title":lambda x: x.attrs['title'], 
