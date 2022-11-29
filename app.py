@@ -16,13 +16,16 @@ def main():
     st.title("Formula 1")
     st.markdown("---")
     list_event_name, list_event_time, gp_name = get_nextgp_schedule()
-    st.header(f"Next Grand Prix ({gp_name}) Schedule")
-    cols = st.columns(len(list_event_name))
-    for idx, event_name, event_time in zip(range(len(cols)), list_event_name, list_event_time):
-        with cols[idx]:
-            st.caption(event_name)
-            st.info(event_time)
-    st.markdown("---")
+    if list_event_name is not None:
+        st.header(f"Next Grand Prix ({gp_name}) Schedule")
+        cols = st.columns(len(list_event_name))
+        for idx, event_name, event_time in zip(range(len(cols)), list_event_name, list_event_time):
+            with cols[idx]:
+                st.caption(event_name)
+                st.info(event_time)
+                st.markdown("---")
+    else:
+        pass
     st.header("Today and yesterday's news")
     ns = NewsScraper()
     with st.expander("Target to scrape"):
