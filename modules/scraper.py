@@ -27,7 +27,7 @@ def get_nextgp_schedule():
     else:
         return None, None, None
 
-class NewsScraper():
+class NewsScraper:
     """
     スクレイピングを行うクラス
     上記のCommandクラス内で用いる
@@ -50,18 +50,11 @@ class NewsScraper():
                     "scrape_date":".content>.contentitem", "get_date":lambda x: x.contents[0],
                     "strptime_format":"%Y年%m月%d日", "link_head":"",
                     "page_start":1, "page_add":1},
-            # "BELLAGARA": 
-            #     {"url":"https://bellagara.com/news", "page_format":"/page/", "tail_format":"", 
-            #         "scrape_title":".uk-card-title", "get_title":lambda x: x.contents[0].contents[0], 
-            #         "scrape_link":".uk-card-title", "get_link":lambda x: x.contents[0].attrs['href'], 
-            #         "scrape_date":".uk-width-expand>.uk-card-body>.uk-text-meta.uk-margin-small>time", "get_date":lambda x: x.contents[0][:10],
-            #         "strptime_format":"%Y.%m.%d", "link_head":"",
-            #         "page_start":1, "page_add":1},
             "motorsport.com":
                 {"url":"https://jp.motorsport.com/f1/news/", "page_format":"?p=", "tail_format":"", 
-                    "scrape_title":".ms-content_main .ms-item_title>.ms-item_link--text", "get_title":lambda x: x.attrs['title'], 
-                    "scrape_link":".ms-content_main .ms-item_title>.ms-item_link--text", "get_link":lambda x: x.attrs['href'], 
-                    "scrape_date":".ms-content_main .ms-item_info-top>.ms-item_date .ms-item_date-value", "get_date":lambda x: x.attrs['datetime'][:10],
+                    "scrape_title":".ms-grid.ms-grid-hor-d.ms-grid-hor-t.ms-grid-hor-m .ms-item__title-long", "get_title":lambda x: x.contents[0], 
+                    "scrape_link":".ms-grid.ms-grid-hor-d.ms-grid-hor-t.ms-grid-hor-m a[href]", "get_link":lambda x: x['href'], 
+                    "scrape_date":".ms-grid.ms-grid-hor-d.ms-grid-hor-t.ms-grid-hor-m .ms-item__date.msf-primary-sm-bold", "get_date":lambda x: x['datetime'][:10],
                     "strptime_format":"%Y-%m-%d", "link_head":"https://jp.motorsport.com",
                     "page_start":1, "page_add":1},
             "F1情報通":

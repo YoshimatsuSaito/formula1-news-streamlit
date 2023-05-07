@@ -2,15 +2,15 @@ import streamlit as st
 
 from modules.scraper import NewsScraper, get_nextgp_schedule
 
-@st.cache(ttl=60*5, show_spinner=False)
-def get_news(ns):
+@st.cache_resource(ttl=60*5, show_spinner=False)
+def get_news(_ns):
     """
     5分間はscrapingの状態をキャッシュする
     ニュースを見るというアクション単位では都度scrapingをしてほしいが、
     一回のアクションの最中にブラウザの切り替えなどをした際にいちいちやり直される必要はない
     """
-    ns.get_news_info()
-    return ns
+    _ns.get_news_info()
+    return _ns
 
 def main():
     st.title("Formula 1")

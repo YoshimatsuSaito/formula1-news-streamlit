@@ -15,3 +15,5 @@ streamlit = "*"
 python_version = "3"
 
 [dev-packages]
+jupyter = "*"
+jupyterlab = "*"
