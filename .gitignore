@@ -1,5 +1,6 @@
 notebook/
 Pipfile.lock
+venv/
 
 */__pycache__
 __pycache__
