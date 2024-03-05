@@ -1,10 +1,10 @@
 import datetime as dt
 from datetime import datetime, timedelta
-from pytz import timezone
 
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup as bs
+from pytz import timezone
 
 
 def get_nextgp_schedule():
