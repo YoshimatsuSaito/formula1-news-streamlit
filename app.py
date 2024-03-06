@@ -18,7 +18,6 @@ def get_news(_ns):
 
 def main():
     st.title("Formula 1")
-    st.markdown("---")
 
     # カレンダー表示
     df_season_calendar = get_this_season_calendar()
@@ -35,18 +34,18 @@ def main():
                 else "TBA/Not held"
             )
         )
-    st.dataframe(
-        df_target.style.applymap(
-            lambda _: "background-color: CornflowerBlue;",
-            subset=(
-                [latest_idx],
-                slice(None),
+    with st.expander("This season's calendar"):
+        st.dataframe(
+            df_target.style.applymap(
+                lambda _: "background-color: CornflowerBlue;",
+                subset=(
+                    [latest_idx],
+                    slice(None),
+                ),
             ),
-        ),
-        height=200,
-        hide_index=True,
-    )
-    st.markdown("---")
+            height=200,
+            hide_index=True,
+        )
 
     st.header("Today and yesterday's news")
     ns = NewsScraper()
