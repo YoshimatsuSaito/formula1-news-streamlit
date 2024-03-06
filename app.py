@@ -39,21 +39,16 @@ def main():
             st.info(event_time)
 
     with st.expander("Season calendar"):
-        for idx, row in df_season_calendar.iterrows():
-            st.header(row.gp_round_name)
-            list_event_name = ["fp1", "fp2", "fp3", "qualifying", "sprint", "race"]
-            cols = st.columns(len(list_event_name))
-            for idx, event_name in enumerate(list_event_name):
-                with cols[idx]:
-                    st.caption(event_name)
-                    event_time = row[event_name]
-                    event_time = (
-                        event_time.strftime("%m/%d %a %H:%M")
-                        if isinstance(event_time, pd.Timestamp)
-                        else "TBA/Not held"
-                    )
-                    st.info(event_time)
-                    st.markdown("---")
+        df_target = df_season_calendar[["gp_round_name"] + list_event_name]
+        for event_name in list_event_name:
+            df_target[event_name] = df_target[event_name].apply(
+                lambda x: (
+                    x.strftime("%m/%d %a %H:%M")
+                    if isinstance(x, pd.Timestamp)
+                    else "TBA/Not held"
+                )
+            )
+        st.dataframe(df_target, hide_index=True)
     st.markdown("---")
 
     st.header("Today and yesterday's news")
