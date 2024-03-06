@@ -30,13 +30,17 @@ class ErgastAPI:
         """Get event datetime of the season"""
         if event == "race":
             return [
-                x.date.astimezone(timezone).strftime("%m/%d %H:%M")
+                ( 
+                    x.date.astimezone(timezone)
+                    if x.date is not None
+                    else None
+                )
                 for x in self.season_info
             ]
         elif event == "fp1":
             return [
                 (
-                    x.first_practice.astimezone(timezone).strftime("%m/%d %H:%M")
+                    x.first_practice.astimezone(timezone)
                     if x.first_practice is not None
                     else None
                 )
@@ -45,7 +49,7 @@ class ErgastAPI:
         elif event == "fp2":
             return [
                 (
-                    x.second_practice.astimezone(timezone).strftime("%m/%d %H:%M")
+                    x.second_practice.astimezone(timezone)
                     if x.second_practice is not None
                     else None
                 )
@@ -54,7 +58,7 @@ class ErgastAPI:
         elif event == "fp3":
             return [
                 (
-                    x.third_practice.astimezone(timezone).strftime("%m/%d %H:%M")
+                    x.third_practice.astimezone(timezone)
                     if x.third_practice is not None
                     else None
                 )
@@ -63,7 +67,7 @@ class ErgastAPI:
         elif event == "sprint":
             return [
                 (
-                    x.sprint.astimezone(timezone).strftime("%m/%d %H:%M")
+                    x.sprint.astimezone(timezone)
                     if x.sprint is not None
                     else None
                 )
@@ -72,7 +76,7 @@ class ErgastAPI:
         elif event == "qualifying":
             return [
                 (
-                    x.qualifying.astimezone(timezone).strftime("%m/%d %H:%M")
+                    x.qualifying.astimezone(timezone)
                     if x.qualifying is not None
                     else None
                 )
@@ -158,6 +162,8 @@ class ErgastAPI:
                 "n_round": self.get_round_number(),
             }
         )
+        df["is_latest_gp"] = 0
+        df.at[self.get_latest_gp_index(), "is_latest_gp"] = 1
 
         return df
 

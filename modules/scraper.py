@@ -7,23 +7,6 @@ from bs4 import BeautifulSoup as bs
 from pytz import timezone
 
 
-def get_nextgp_schedule():
-    """
-    次のグランプリの日程を取得して返す便利用関数
-    """
-    url = "https://formula1-data.com/race/gp"
-    r = requests.get(url)
-    soup = bs(r.text, "lxml")
-    list_gp_name = soup.select(".nextGp__title")
-    if len(list_gp_name) > 0:
-        gp_name = list_gp_name[0].contents[2]
-        list_event_name = [x.contents[0] for x in soup.select(".nextGp__result h3")]
-        list_event_time = [x.contents[0] for x in soup.select(".nextGp__result time")]
-        return list_event_name, list_event_time, gp_name
-    else:
-        return None, None, None
-
-
 class NewsScraper:
     """
     スクレイピングを行うクラス
