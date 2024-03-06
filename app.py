@@ -19,36 +19,33 @@ def get_news(_ns):
 def main():
     st.title("Formula 1")
     st.markdown("---")
+
+    # カレンダー表示
     df_season_calendar = get_this_season_calendar()
     list_event_name = ["fp1", "fp2", "fp3", "qualifying", "sprint", "race"]
-
-    df_latest_gp = df_season_calendar.loc[
-        df_season_calendar["is_latest_gp"] == 1
-    ].reset_index(drop=True)
-    st.header(f"Next: {df_latest_gp.at[0, 'gp_round_name']}")
-    cols = st.columns(len(list_event_name))
-    for idx, event_name in enumerate(list_event_name):
-        with cols[idx]:
-            st.caption(event_name)
-            event_time = df_latest_gp.at[0, event_name]
-            event_time = (
-                event_time.strftime("%m/%d %a %H:%M")
-                if isinstance(event_time, pd.Timestamp)
+    latest_idx = df_season_calendar.loc[df_season_calendar["is_latest_gp"] == 1].index[
+        0
+    ]
+    df_target = df_season_calendar[["gp_name"] + list_event_name]
+    for event_name in list_event_name:
+        df_target[event_name] = df_target[event_name].apply(
+            lambda x: (
+                x.strftime("%m/%d %a %H:%M")
+                if isinstance(x, pd.Timestamp)
                 else "TBA/Not held"
             )
-            st.info(event_time)
-
-    with st.expander("Season calendar"):
-        df_target = df_season_calendar[["gp_round_name"] + list_event_name]
-        for event_name in list_event_name:
-            df_target[event_name] = df_target[event_name].apply(
-                lambda x: (
-                    x.strftime("%m/%d %a %H:%M")
-                    if isinstance(x, pd.Timestamp)
-                    else "TBA/Not held"
-                )
-            )
-        st.dataframe(df_target, hide_index=True)
+        )
+    st.dataframe(
+        df_target.style.applymap(
+            lambda _: "background-color: CornflowerBlue;",
+            subset=(
+                [latest_idx],
+                slice(None),
+            ),
+        ),
+        height=200,
+        hide_index=True,
+    )
     st.markdown("---")
 
     st.header("Today and yesterday's news")
