@@ -1,8 +1,8 @@
 import pandas as pd
 import streamlit as st
 
-from modules.scraper import NewsScraper
 from modules.race_calendar import get_this_season_calendar
+from modules.scraper import NewsScraper
 
 
 @st.cache_resource(ttl=60 * 5, show_spinner=False)
@@ -21,15 +21,21 @@ def main():
     st.markdown("---")
     df_season_calendar = get_this_season_calendar()
     list_event_name = ["fp1", "fp2", "fp3", "qualifying", "sprint", "race"]
-    
-    df_latest_gp = df_season_calendar.loc[df_season_calendar["is_latest_gp"] == 1].reset_index(drop=True)
+
+    df_latest_gp = df_season_calendar.loc[
+        df_season_calendar["is_latest_gp"] == 1
+    ].reset_index(drop=True)
     st.header(f"Next: {df_latest_gp.at[0, 'gp_round_name']}")
     cols = st.columns(len(list_event_name))
     for idx, event_name in enumerate(list_event_name):
         with cols[idx]:
             st.caption(event_name)
             event_time = df_latest_gp.at[0, event_name]
-            event_time = event_time.strftime("%m/%d %a %H:%M") if isinstance(event_time, pd.Timestamp) else "TBA/Not held"
+            event_time = (
+                event_time.strftime("%m/%d %a %H:%M")
+                if isinstance(event_time, pd.Timestamp)
+                else "TBA/Not held"
+            )
             st.info(event_time)
 
     with st.expander("Season calendar"):
@@ -41,7 +47,11 @@ def main():
                 with cols[idx]:
                     st.caption(event_name)
                     event_time = row[event_name]
-                    event_time = event_time.strftime("%m/%d %a %H:%M") if isinstance(event_time, pd.Timestamp) else "TBA/Not held"
+                    event_time = (
+                        event_time.strftime("%m/%d %a %H:%M")
+                        if isinstance(event_time, pd.Timestamp)
+                        else "TBA/Not held"
+                    )
                     st.info(event_time)
                     st.markdown("---")
     st.markdown("---")

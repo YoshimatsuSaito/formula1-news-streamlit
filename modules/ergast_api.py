@@ -30,11 +30,7 @@ class ErgastAPI:
         """Get event datetime of the season"""
         if event == "race":
             return [
-                ( 
-                    x.date.astimezone(timezone)
-                    if x.date is not None
-                    else None
-                )
+                (x.date.astimezone(timezone) if x.date is not None else None)
                 for x in self.season_info
             ]
         elif event == "fp1":
@@ -66,11 +62,7 @@ class ErgastAPI:
             ]
         elif event == "sprint":
             return [
-                (
-                    x.sprint.astimezone(timezone)
-                    if x.sprint is not None
-                    else None
-                )
+                (x.sprint.astimezone(timezone) if x.sprint is not None else None)
                 for x in self.season_info
             ]
         elif event == "qualifying":
