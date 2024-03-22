@@ -20,32 +20,39 @@ def main():
     st.title("Formula 1")
 
     # カレンダー表示
-    df_season_calendar = get_this_season_calendar()
-    list_event_name = ["fp1", "fp2", "fp3", "qualifying", "sprint", "race"]
-    latest_idx = df_season_calendar.loc[df_season_calendar["is_latest_gp"] == 1].index[
-        0
-    ]
-    df_target = df_season_calendar[["gp_name"] + list_event_name]
-    for event_name in list_event_name:
-        df_target[event_name] = df_target[event_name].apply(
-            lambda x: (
-                x.strftime("%m/%d %a %H:%M")
-                if isinstance(x, pd.Timestamp)
-                else "TBA/Not held"
+    try:
+        df_season_calendar = get_this_season_calendar()
+    except:
+        df_season_calendar = None
+
+    if df_season_calendar is None:
+        pass
+    else:
+        list_event_name = ["fp1", "fp2", "fp3", "qualifying", "sprint", "race"]
+        latest_idx = df_season_calendar.loc[df_season_calendar["is_latest_gp"] == 1].index[
+            0
+        ]
+        df_target = df_season_calendar[["gp_name"] + list_event_name]
+        for event_name in list_event_name:
+            df_target[event_name] = df_target[event_name].apply(
+                lambda x: (
+                    x.strftime("%m/%d %a %H:%M")
+                    if isinstance(x, pd.Timestamp)
+                    else "TBA/Not held"
+                )
             )
-        )
-    with st.expander("This season's calendar"):
-        st.dataframe(
-            df_target.style.applymap(
-                lambda _: "background-color: CornflowerBlue;",
-                subset=(
-                    [latest_idx],
-                    slice(None),
+        with st.expander("This season's calendar"):
+            st.dataframe(
+                df_target.style.applymap(
+                    lambda _: "background-color: CornflowerBlue;",
+                    subset=(
+                        [latest_idx],
+                        slice(None),
+                    ),
                 ),
-            ),
-            height=200,
-            hide_index=True,
-        )
+                height=200,
+                hide_index=True,
+            )
 
     st.header("Today and yesterday's news")
     ns = NewsScraper()
