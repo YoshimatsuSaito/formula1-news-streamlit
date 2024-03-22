@@ -5,7 +5,7 @@ from modules.race_calendar import get_this_season_calendar
 from modules.scraper import NewsScraper
 
 
-@st.cache_resource(ttl=60 * 5, show_spinner=False)
+@st.cache_resource(ttl=60 * 30, show_spinner=False)
 def get_news(_ns):
     """
     5分間はscrapingの状態をキャッシュする
@@ -15,15 +15,20 @@ def get_news(_ns):
     _ns.get_news_info()
     return _ns
 
-
-def main():
-    st.title("Formula 1")
-
+@st.cache_data(ttl=60 * 60, show_spinner=False)
+def get_calendar() -> pd.DataFrame | None:
+    """スケジュールの取得"""
     # カレンダー表示
     try:
         df_season_calendar = get_this_season_calendar()
     except:
         df_season_calendar = None
+    return df_season_calendar
+
+def main():
+    st.title("Formula 1")
+
+    df_season_calendar = get_calendar()
 
     if df_season_calendar is None:
         pass
