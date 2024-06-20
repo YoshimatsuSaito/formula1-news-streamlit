@@ -1,7 +1,5 @@
-import pandas as pd
 import streamlit as st
 
-from modules.race_calendar import get_this_season_calendar
 from modules.scraper import NewsScraper
 
 
@@ -15,49 +13,8 @@ def get_news(_ns):
     _ns.get_news_info()
     return _ns
 
-@st.cache_data(ttl=60 * 60, show_spinner=False)
-def get_calendar() -> pd.DataFrame | None:
-    """スケジュールの取得"""
-    # カレンダー表示
-    try:
-        df_season_calendar = get_this_season_calendar()
-    except:
-        df_season_calendar = None
-    return df_season_calendar
-
 def main():
     st.title("Formula 1")
-
-    df_season_calendar = get_calendar()
-
-    if df_season_calendar is None:
-        pass
-    else:
-        list_event_name = ["fp1", "fp2", "fp3", "qualifying", "sprint", "race"]
-        latest_idx = df_season_calendar.loc[df_season_calendar["is_latest_gp"] == 1].index[
-            0
-        ]
-        df_target = df_season_calendar[["gp_name"] + list_event_name]
-        for event_name in list_event_name:
-            df_target[event_name] = df_target[event_name].apply(
-                lambda x: (
-                    x.strftime("%m/%d %a %H:%M")
-                    if isinstance(x, pd.Timestamp)
-                    else "TBA/Not held"
-                )
-            )
-        with st.expander("This season's calendar"):
-            st.dataframe(
-                df_target.style.applymap(
-                    lambda _: "background-color: CornflowerBlue;",
-                    subset=(
-                        [latest_idx],
-                        slice(None),
-                    ),
-                ),
-                height=200,
-                hide_index=True,
-            )
 
     st.header("Today and yesterday's news")
     ns = NewsScraper()
