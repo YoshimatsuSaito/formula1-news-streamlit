@@ -1,10 +1,9 @@
 beautifulsoup4
-black
 ergast-py
-isort
 lxml
 numpy
 pandas
 requests
 streamlit
 tqdm
+PyYAML

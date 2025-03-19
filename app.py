@@ -1,51 +1,32 @@
+from pathlib import Path
+
 import streamlit as st
 
-from modules.scraper import NewsScraper
+from modules.load_config import load_config
+from modules.structure import SiteStructure, ResultStructure
+from modules.scraper import scrape_news
+
+DICT_SITE_STRUCTURE = load_config(Path("./config/config.yaml"))
 
 
-@st.cache_resource(ttl=60 * 30, show_spinner=False)
-def get_news(_ns):
-    """
-    5分間はscrapingの状態をキャッシュする
-    ニュースを見るというアクション単位では都度scrapingをしてほしいが、
-    一回のアクションの最中にブラウザの切り替えなどをした際にいちいちやり直される必要はない
-    """
-    _ns.get_news_info()
-    return _ns
+st.title("Formula 1 Latest News")
 
-def main():
-    st.title("Formula 1")
-
-    st.header("Today and yesterday's news")
-    ns = NewsScraper()
-    with st.spinner("Now scraping..."):
-        # 5分間のキャッシュ情報
-        ns = get_news(ns)
-        if len(ns.df_today_news["site_name"]) > 0:
-            for site_name in ns.df_today_news["site_name"].unique():
-                df_target = ns.df_today_news[
-                    ns.df_today_news["site_name"] == site_name
-                ].reset_index(drop=True)
-                st.subheader(site_name)
-                for idx in range(len(df_target)):
-                    news_link = df_target.iloc[idx]["news_link"]
-                    news_title = df_target.iloc[idx]["news_title"]
-                    st.markdown(
-                        f"<a href='{news_link}' target='_blank' rel='noopener noreferrer'>{news_title}</a>",
-                        unsafe_allow_html=True,
-                    )
-        else:
-            st.markdown("Nothing so far")
-
-    st.markdown("---")
-    with st.expander("Target to scrape"):
-        for site_name in ns.dict_site_structure.keys():
-            site_home = ns.dict_site_structure[site_name]["url"]
+with st.spinner("Now scraping..."):
+    for name, site_structure in DICT_SITE_STRUCTURE.items():
+        result_structure = scrape_news(name=name, site_structure=site_structure)
+        if result_structure.is_empty():
+            continue
+        st.subheader(name)
+        for title, link in zip(result_structure.list_title, result_structure.list_link):
             st.markdown(
-                f"<a href='{site_home}' target='_blank' rel='noopener noreferrer'>{site_name}</a>",
+                f"<a href='{link}' target='_blank' rel='noopener noreferrer'>{title}</a>",
                 unsafe_allow_html=True,
             )
 
-
-if __name__ == "__main__":
-    main()
+st.markdown("---")
+with st.expander("Target to scrape"):
+    for name, site_structure in DICT_SITE_STRUCTURE.items():
+        st.markdown(
+            f"<a href='{site_structure.news_home}' target='_blank' rel='noopener noreferrer'>{name}</a>",
+            unsafe_allow_html=True,
+        )

@@ -1,0 +1,51 @@
+sites:
+  autosport-japan:
+    prefix_home: "hoge"
+    news_home: "https://www.as-web.jp/f1/news"
+    scrape_title: ".news-list .title"
+    get_title: "lambda x: x.contents[0]"
+    scrape_link: "ul.news-list li a[href]"
+    get_link: "lambda x: x['href']"
+  motorsport:
+    prefix_home: "https://jp.motorsport.com"
+    news_home: "https://jp.motorsport.com/f1/news/"
+    scrape_title: ".ms-item.ms-item-hor-d.ms-item-hor-t.ms-item-hor-m .ms-item__thumb-title"
+    get_title: "lambda x: x.contents[0].strip()"
+    scrape_link: ".ms-item.ms-item-hor-d.ms-item-hor-t.ms-item-hor-m"
+    get_link: "lambda x: x['href']"
+  F1情報通:
+    prefix_home: "http://f1jouhou2.blog.fc2.com"
+    news_home: "http://f1jouhou2.blog.fc2.com"
+    scrape_title: "body #all .separate .index_title .index_h2 a"
+    get_title: "lambda x: x.contents[0]"
+    scrape_link: "body #all .separate .index_title .index_h2 a"
+    get_link: "lambda x: x.attrs['href']" 
+  F1-Gate:
+    prefix_home: ""
+    news_home: "https://f1-gate.com"
+    scrape_title: ".content h2 a"
+    get_title: "lambda x: x.contents[0]"
+    scrape_link: ".content h2 a"
+    get_link: "lambda x: x.attrs['href']"
+  # BBC:
+  #   prefix_home: "hoge"
+  #   news_home: "https://www.bbc.com/sport/formula1"
+  #   scrape_title: ".gs-c-promo-heading__title.gel-double-pica-bold.sp-o-link-split__text"
+  #   get_title: "lambda x: x.contents[0]"
+  #   scrape_link: ".gs-c-promo-heading.gs-o-faux-block-link__overlay-link.sp-o-link-split__anchor.gel-double-pica-bold"
+  #   get_link: "lambda x: x.attrs['href']"
+  # autosport: 
+  #   prefix_home: "hoge"
+  #   news_home: "https://www.autosport.com/f1/news/"
+  #   scrape_title: ".ms-grid-hor-items-1-2-3-4-5 .ms-item_link.ms-item_link--text"
+  #   get_title: "lambda x: x['title']"
+  #   scrape_link: ".ms-grid-hor-items-1-2-3-4-5 .ms-item_link.ms-item_link--text"
+  #   get_link: "lambda x: x['href']"      
+  # skysports:
+  #   prefix_home: "hoge"
+  #   news_home: "https://www.skysports.com/f1/news"
+  #   scrape_title: ".news-list.block .news-list__headline a"
+  #   get_title: "lambda x: x.contents[0]"
+  #   scrape_link: ".news-list.block .news-list__headline a"
+  #   get_link: "lambda x: x.attrs['href']"
+      
