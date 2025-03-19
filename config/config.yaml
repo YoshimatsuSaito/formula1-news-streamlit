@@ -1,6 +1,6 @@
 sites:
   autosport-japan:
-    prefix_home: "hoge"
+    prefix_home: ""
     news_home: "https://www.as-web.jp/f1/news"
     scrape_title: ".news-list .title"
     get_title: "lambda x: x.contents[0]"
@@ -14,7 +14,7 @@ sites:
     scrape_link: ".ms-item.ms-item-hor-d.ms-item-hor-t.ms-item-hor-m"
     get_link: "lambda x: x['href']"
   F1情報通:
-    prefix_home: "http://f1jouhou2.blog.fc2.com"
+    prefix_home: ""
     news_home: "http://f1jouhou2.blog.fc2.com"
     scrape_title: "body #all .separate .index_title .index_h2 a"
     get_title: "lambda x: x.contents[0]"
