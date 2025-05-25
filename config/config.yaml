@@ -27,25 +27,25 @@ sites:
     get_title: "lambda x: x.contents[0]"
     scrape_link: ".content h2 a"
     get_link: "lambda x: x.attrs['href']"
-  # BBC:
-  #   prefix_home: "hoge"
-  #   news_home: "https://www.bbc.com/sport/formula1"
-  #   scrape_title: ".gs-c-promo-heading__title.gel-double-pica-bold.sp-o-link-split__text"
-  #   get_title: "lambda x: x.contents[0]"
-  #   scrape_link: ".gs-c-promo-heading.gs-o-faux-block-link__overlay-link.sp-o-link-split__anchor.gel-double-pica-bold"
-  #   get_link: "lambda x: x.attrs['href']"
-  # autosport: 
-  #   prefix_home: "hoge"
-  #   news_home: "https://www.autosport.com/f1/news/"
-  #   scrape_title: ".ms-grid-hor-items-1-2-3-4-5 .ms-item_link.ms-item_link--text"
-  #   get_title: "lambda x: x['title']"
-  #   scrape_link: ".ms-grid-hor-items-1-2-3-4-5 .ms-item_link.ms-item_link--text"
-  #   get_link: "lambda x: x['href']"      
-  # skysports:
-  #   prefix_home: "hoge"
-  #   news_home: "https://www.skysports.com/f1/news"
-  #   scrape_title: ".news-list.block .news-list__headline a"
-  #   get_title: "lambda x: x.contents[0]"
-  #   scrape_link: ".news-list.block .news-list__headline a"
-  #   get_link: "lambda x: x.attrs['href']"
+  BBC:
+    prefix_home: "https://www.bbc.com"
+    news_home: "https://www.bbc.com/sport/formula1"
+    scrape_title: "div[data-testid='promo'][type='article'] a p"
+    get_title: "lambda x: x.get_text(strip=True)"
+    scrape_link: "div[data-testid='promo'][type='article'] a"
+    get_link: "lambda x: x['href'] if x.has_attr('href') else ''"
+  autosport: 
+    prefix_home: "https://www.motorsport.com"
+    news_home: "https://www.motorsport.com/f1/news/"
+    scrape_title: "a.ms-item"
+    get_title: 'lambda x: x.get("title", "").strip()'
+    scrape_link: "a.ms-item"
+    get_link: 'lambda x: x["href"] if x.has_attr("href") else ""'   
+  skysports:
+    prefix_home: "https://www.skysports.com"
+    news_home: "https://www.skysports.com/f1/news"
+    scrape_title: "a.sdc-site-tile__headline-link span.sdc-site-tile__headline-text"
+    get_title: "lambda x: x.get_text(strip=True)"
+    scrape_link: "a.sdc-site-tile__headline-link"
+    get_link: 'lambda x: x["href"] if x.has_attr("href") else ""'
       
