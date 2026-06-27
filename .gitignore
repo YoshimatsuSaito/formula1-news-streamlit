@@ -3,4 +3,5 @@ Pipfile.lock
 venv/
 
 */__pycache__
-__pycache__index.html
+__pycache__
+index.html
