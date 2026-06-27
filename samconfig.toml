@@ -1,0 +1,13 @@
+# SAM deployment configuration
+# Run: sam deploy (first time: sam deploy --guided)
+
+version = 0.1
+
+[default.deploy.parameters]
+stack_name       = "f1-news-website"
+region           = "ap-northeast-1"
+capabilities     = "CAPABILITY_IAM"
+confirm_changeset = false
+fail_on_empty_changeset = false
+# SAM uses this bucket to upload the template; auto-created if using --resolve-s3
+resolve_s3       = true

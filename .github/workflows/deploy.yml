@@ -5,10 +5,60 @@ on:
     - cron: '*/30 * * * *'  # Every 30 minutes
   workflow_dispatch:          # Allow manual trigger from GitHub UI
 
+permissions:
+  id-token: write  # Required for OIDC auth (if using IAM role instead of keys)
+  contents: read
+
 jobs:
-  deploy:
+  # ── Job 1: Deploy / update AWS infrastructure via SAM ──────────────────────
+  infrastructure:
+    name: SAM deploy (infra)
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    outputs:
+      bucket_name:      ${{ steps.outputs.outputs.bucket_name }}
+      distribution_id:  ${{ steps.outputs.outputs.distribution_id }}
+      website_url:      ${{ steps.outputs.outputs.website_url }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ secrets.AWS_REGION }}
+
+      - uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
+      - name: SAM deploy
+        run: sam deploy --no-confirm-changeset
+
+      - name: Read stack outputs
+        id: outputs
+        run: |
+          STACK_NAME=$(grep 'stack_name' samconfig.toml | awk -F'"' '{print $2}')
+          OUTPUTS=$(aws cloudformation describe-stacks \
+            --stack-name "$STACK_NAME" \
+            --query 'Stacks[0].Outputs' \
+            --output json)
+
+          BUCKET=$(echo "$OUTPUTS" | jq -r '.[] | select(.OutputKey=="BucketName") | .OutputValue')
+          DIST_ID=$(echo "$OUTPUTS" | jq -r '.[] | select(.OutputKey=="DistributionId") | .OutputValue')
+          URL=$(echo "$OUTPUTS" | jq -r '.[] | select(.OutputKey=="WebsiteUrl") | .OutputValue')
+
+          echo "bucket_name=$BUCKET"       >> "$GITHUB_OUTPUT"
+          echo "distribution_id=$DIST_ID"  >> "$GITHUB_OUTPUT"
+          echo "website_url=$URL"          >> "$GITHUB_OUTPUT"
+          echo "Website: $URL"
+
+  # ── Job 2: Scrape news, generate HTML, upload to S3 ────────────────────────
+  content:
+    name: Generate & upload content
+    runs-on: ubuntu-latest
+    needs: infrastructure
+    timeout-minutes: 8
 
     steps:
       - uses: actions/checkout@v4
@@ -24,22 +74,20 @@ jobs:
       - name: Generate index.html
         run: python generate.py
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region:            ${{ secrets.AWS_REGION }}
 
       - name: Upload to S3
         run: |
-          aws s3 cp index.html s3://${{ secrets.S3_BUCKET_NAME }}/index.html \
+          aws s3 cp index.html s3://${{ needs.infrastructure.outputs.bucket_name }}/index.html \
             --content-type "text/html; charset=utf-8" \
             --cache-control "no-cache, max-age=0"
 
       - name: Invalidate CloudFront cache
-        if: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID != '' }}
         run: |
           aws cloudfront create-invalidation \
-            --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --distribution-id ${{ needs.infrastructure.outputs.distribution_id }} \
             --paths "/*"
