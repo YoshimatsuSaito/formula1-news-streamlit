@@ -1,0 +1,45 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: F1 News static website - S3 static website hosting
+
+Resources:
+
+  WebsiteBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${AWS::StackName}-website-${AWS::AccountId}"
+      # Serve the bucket as a static website (HTTP only)
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: index.html
+      # ACLs disabled; public access is granted via the bucket policy below
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      # Allow a public bucket policy (required for static website hosting)
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+
+  WebsiteBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref WebsiteBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: "*"
+            Action: s3:GetObject
+            Resource: !Sub "${WebsiteBucket.Arn}/*"
+
+Outputs:
+  BucketName:
+    Description: S3 bucket name for website content
+    Value: !Ref WebsiteBucket
+
+  WebsiteUrl:
+    Description: Public URL of the website (S3 static website endpoint, HTTP)
+    Value: !GetAtt WebsiteBucket.WebsiteURL

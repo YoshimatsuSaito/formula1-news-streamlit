@@ -1,28 +1,101 @@
+import xml.etree.ElementTree as ET
+
 import requests
 from bs4 import BeautifulSoup as bs
 
 from .structure import SiteStructure, ResultStructure
 
+_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    )
+}
+
 
 def scrape_news(
     name: str, site_structure: SiteStructure, max_num: int = 10
 ) -> ResultStructure:
-    """
-    サイトの情報を抜き出す関数
-    """
-    headers_dic = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    }
-    r = requests.get(site_structure.news_home, headers=headers_dic)
-    soup = bs(r.text, "lxml")
-    list_title = [
-        site_structure.get_title(x) for x in soup.select(site_structure.scrape_title)
-    ]
-    list_link = [
-        f"{site_structure.prefix_home}{site_structure.get_link(x)}"
-        for x in soup.select(site_structure.scrape_link)
-    ]
+    if site_structure.source == "rss":
+        return _scrape_rss(name, site_structure, max_num)
+    return _scrape_html(name, site_structure, max_num)
 
+
+def _scrape_rss(name: str, site: SiteStructure, max_num: int) -> ResultStructure:
+    r = requests.get(
+        site.rss_url,
+        headers={**_HEADERS, "Accept": "application/rss+xml, application/atom+xml, */*"},
+        timeout=15,
+    )
+    r.raise_for_status()
+    root = ET.fromstring(r.content)
+
+    # strip namespace from root tag for format detection
+    root_tag = root.tag.split("}")[-1] if "}" in root.tag else root.tag
+
+    if root_tag == "rss":
+        titles, links = _parse_rss2(root, max_num)
+    elif root_tag == "feed":
+        titles, links = _parse_atom(root, max_num)
+    elif root_tag == "RDF":
+        titles, links = _parse_rdf(root, max_num)
+    else:
+        raise ValueError(f"Unknown feed root tag: {root.tag}")
+
+    return ResultStructure(name=name, list_title=titles, list_link=links)
+
+
+def _parse_rss2(root: ET.Element, max_num: int) -> tuple[list[str], list[str]]:
+    titles, links = [], []
+    for item in root.findall(".//item")[:max_num]:
+        title = _child_text(item, "title")
+        link = _child_text(item, "link")
+        if title and link:
+            titles.append(title)
+            links.append(link)
+    return titles, links
+
+
+def _parse_atom(root: ET.Element, max_num: int) -> tuple[list[str], list[str]]:
+    ns = "http://www.w3.org/2005/Atom"
+    titles, links = [], []
+    for entry in root.findall(f".//{{{ns}}}entry")[:max_num]:
+        title_el = entry.find(f"{{{ns}}}title")
+        title = (title_el.text or "").strip() if title_el is not None else ""
+        link_el = entry.find(f"{{{ns}}}link")
+        link = link_el.get("href", "").strip() if link_el is not None else ""
+        if title and link:
+            titles.append(title)
+            links.append(link)
+    return titles, links
+
+
+def _parse_rdf(root: ET.Element, max_num: int) -> tuple[list[str], list[str]]:
+    ns = "http://purl.org/rss/1.0/"
+    titles, links = [], []
+    for item in root.findall(f"{{{ns}}}item")[:max_num]:
+        title = _child_text(item, f"{{{ns}}}title")
+        link = _child_text(item, f"{{{ns}}}link")
+        if title and link:
+            titles.append(title)
+            links.append(link)
+    return titles, links
+
+
+def _child_text(el: ET.Element, tag: str) -> str:
+    child = el.find(tag)
+    return (child.text or "").strip() if child is not None else ""
+
+
+def _scrape_html(name: str, site: SiteStructure, max_num: int) -> ResultStructure:
+    r = requests.get(site.news_home, headers=_HEADERS, timeout=15)
+    r.raise_for_status()
+    soup = bs(r.text, "lxml")
+    list_title = [site.get_title(x) for x in soup.select(site.scrape_title)]
+    list_link = [
+        f"{site.prefix_home}{site.get_link(x)}"
+        for x in soup.select(site.scrape_link)
+    ]
     return ResultStructure(
         name=name, list_link=list_link[:max_num], list_title=list_title[:max_num]
     )

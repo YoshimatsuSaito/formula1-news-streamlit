@@ -1,15 +1,19 @@
-from typing import Callable
+from typing import Callable, Optional
 from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
 class SiteStructure:
-    prefix_home: str
+    source: str  # "html" or "rss"
     news_home: str
-    scrape_title: str
-    get_title: Callable
-    scrape_link: str
-    get_link: Callable
+    # HTML scraping fields
+    prefix_home: str = ""
+    scrape_title: str = ""
+    get_title: Optional[Callable] = None
+    scrape_link: str = ""
+    get_link: Optional[Callable] = None
+    # RSS field
+    rss_url: str = ""
 
 
 @dataclass(frozen=True)
@@ -23,7 +27,4 @@ class ResultStructure:
         return {k: v for k, v in zip(self.list_title, self.list_link)}
 
     def is_empty(self) -> bool:
-        if len(self.list_title) == 0 or len(self.list_link) == 0:
-            return True
-        else:
-            return False
+        return len(self.list_title) == 0 or len(self.list_link) == 0
