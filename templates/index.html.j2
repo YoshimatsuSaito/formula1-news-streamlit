@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="ja" x-data="app()" :data-theme="theme">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>F1 News</title>
+  <style>
+    /* ── Tokens ─────────────────────────────────────────────── */
+    :root {
+      --red:       #E10600;
+      --bg:        #0a0a0a;
+      --surface:   #111111;
+      --line:      #1f1f1f;
+      --text:      #e8e8e8;
+      --muted:     #555;
+      --label:     #888;
+      --chip-bg:   #1c1c1c;
+      --chip-on:   #E10600;
+      --chip-txt:  #e8e8e8;
+      --chip-on-txt: #fff;
+      --mono: "SF Mono", "Fira Code", "Cascadia Code", "Consolas", monospace;
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    :root[data-theme="light"],
+    :root:not([data-theme="dark"]):has(+ * + * + *) {
+      /* light overrides applied via Alpine :data-theme */
+      --bg:        #f4f4f2;
+      --surface:   #ffffff;
+      --line:      #e2e2e2;
+      --text:      #111111;
+      --muted:     #aaa;
+      --label:     #666;
+      --chip-bg:   #e8e8e8;
+      --chip-txt:  #111;
+    }
+    @media (prefers-color-scheme: light) {
+      :root:not([data-theme="dark"]) {
+        --bg:        #f4f4f2;
+        --surface:   #ffffff;
+        --line:      #e2e2e2;
+        --text:      #111111;
+        --muted:     #aaa;
+        --label:     #666;
+        --chip-bg:   #e8e8e8;
+        --chip-txt:  #111;
+      }
+    }
+
+    /* ── Reset ──────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 14px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ── Header ─────────────────────────────────────────────── */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--bg);
+      border-bottom: 1px solid var(--line);
+    }
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 24px 10px;
+      gap: 16px;
+    }
+    .wordmark {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+    .wordmark-flag {
+      background: var(--red);
+      color: #fff;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      padding: 2px 7px;
+      border-radius: 2px;
+    }
+    .wordmark-title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.2px;
+    }
+    .header-meta {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .updated {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .theme-btn {
+      background: none;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      color: var(--label);
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+      padding: 5px 8px;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .theme-btn:hover { border-color: var(--muted); color: var(--text); }
+
+    /* ── Filter bar ──────────────────────────────────────────── */
+    .filter-bar {
+      padding: 0 24px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .filter-bar::-webkit-scrollbar { display: none; }
+    .filter-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+    .chips { display: flex; gap: 6px; flex-wrap: nowrap; }
+    .chip {
+      background: var(--chip-bg);
+      color: var(--chip-txt);
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      padding: 4px 10px;
+      white-space: nowrap;
+      transition: background 0.12s, color 0.12s, opacity 0.12s;
+    }
+    .chip[aria-pressed="true"]  { background: var(--chip-on); color: var(--chip-on-txt); opacity: 1; }
+    .chip[aria-pressed="false"] { opacity: 0.45; }
+    .chip:hover { opacity: 1 !important; }
+
+    /* ── Main grid ───────────────────────────────────────────── */
+    main {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1px;
+      background: var(--line);
+    }
+
+    /* ── Source block ────────────────────────────────────────── */
+    .source-block {
+      background: var(--surface);
+      padding: 20px 22px 18px;
+      transition: opacity 0.18s;
+    }
+    .source-block.muted { opacity: 0.18; pointer-events: none; }
+
+    .source-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--red);
+    }
+    .source-name {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text);
+      text-decoration: none;
+    }
+    .source-name:hover { color: var(--red); }
+    .source-count {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    /* ── Article list ────────────────────────────────────────── */
+    .article-list {
+      list-style: none;
+      counter-reset: art;
+    }
+    .article-item {
+      counter-increment: art;
+      display: grid;
+      grid-template-columns: 20px 1fr;
+      gap: 0 8px;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .article-item:last-child { border-bottom: none; }
+    .article-num {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--muted);
+      padding-top: 2px;
+      text-align: right;
+      user-select: none;
+    }
+    .article-num::before { content: counter(art, decimal-leading-zero); }
+    .article-link {
+      color: var(--text);
+      text-decoration: none;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .article-link:hover { color: var(--red); }
+
+    /* ── Footer ──────────────────────────────────────────────── */
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      border-top: 1px solid var(--line);
+      margin-top: 1px;
+    }
+
+    /* ── Responsive ──────────────────────────────────────────── */
+    @media (max-width: 640px) {
+      .header-top { padding: 12px 16px 8px; }
+      .filter-bar  { padding: 0 16px 10px; }
+      main { padding: 0; grid-template-columns: 1fr; }
+      .source-block { padding: 16px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition: none !important; animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <div class="wordmark">
+      <span class="wordmark-flag">F1</span>
+      <span class="wordmark-title">News</span>
+    </div>
+    <div class="header-meta">
+      <span class="updated">{{ updated_at }}</span>
+      <button class="theme-btn" @click="toggleTheme()" :aria-label="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'">
+        <span x-text="theme === 'dark' ? '☀' : '☾'"></span>
+      </button>
+    </div>
+  </div>
+  <div class="filter-bar">
+    <span class="filter-label">Source</span>
+    <div class="chips">
+      <button
+        class="chip"
+        :aria-pressed="String(allActive)"
+        @click="toggleAll()"
+      >ALL</button>
+      {% for source in sources %}
+      <button
+        class="chip"
+        :aria-pressed="String(active.has('{{ source.key }}'))"
+        @click="toggle('{{ source.key }}')"
+      >{{ source.name }}</button>
+      {% endfor %}
+    </div>
+  </div>
+</header>
+
+<main>
+  {% for source in sources %}
+  <div
+    class="source-block"
+    :class="{ muted: !active.has('{{ source.key }}') }"
+  >
+    <div class="source-head">
+      <a class="source-name" href="{{ source.url }}" target="_blank" rel="noopener noreferrer">{{ source.name }}</a>
+      <span class="source-count">{{ source.articles | length }}</span>
+    </div>
+    <ol class="article-list">
+      {% for article in source.articles %}
+      <li class="article-item">
+        <span class="article-num"></span>
+        <a class="article-link" href="{{ article.link }}" target="_blank" rel="noopener noreferrer">{{ article.title }}</a>
+      </li>
+      {% endfor %}
+    </ol>
+  </div>
+  {% endfor %}
+</main>
+
+<footer>AUTO-UPDATED EVERY 30 MIN &nbsp;&middot;&nbsp; GITHUB ACTIONS + S3</footer>
+
+<script>
+  const SOURCE_KEYS = {{ source_keys_json }};
+
+  function app() {
+    const saved = localStorage.getItem('f1-theme');
+    const osLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+    return {
+      theme:  saved || (osLight ? 'light' : 'dark'),
+      active: new Set(SOURCE_KEYS),
+
+      get allActive() { return this.active.size === SOURCE_KEYS.length; },
+
+      toggle(key) {
+        if (this.active.has(key)) {
+          if (this.active.size > 1) { const s = new Set(this.active); s.delete(key); this.active = s; }
+        } else {
+          this.active = new Set([...this.active, key]);
+        }
+      },
+
+      toggleAll() {
+        this.active = this.allActive ? new Set([SOURCE_KEYS[0]]) : new Set(SOURCE_KEYS);
+      },
+
+      toggleTheme() {
+        this.theme = this.theme === 'dark' ? 'light' : 'dark';
+        localStorage.setItem('f1-theme', this.theme);
+      },
+    };
+  }
+</script>
+<script src="https://unpkg.com/alpinejs@3.14.9/dist/cdn.min.js" defer></script>
+</body>
+</html>
