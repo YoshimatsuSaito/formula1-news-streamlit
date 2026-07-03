@@ -27,19 +27,27 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region:            ${{ secrets.AWS_REGION }}
 
-      - uses: aws-actions/setup-sam@v2
-        with:
-          use-installer: true
-
-      - name: SAM deploy
-        run: sam deploy --no-confirm-changeset
+      - name: Deploy CloudFormation stack
+        run: |
+          STACK_NAME=$(grep 'stack_name' samconfig.toml | awk -F'"' '{print $2}')
+          REGION=$(grep 'region' samconfig.toml | awk -F'"' '{print $2}')
+          # Template is < 51KB and has no packaged artifacts, so CloudFormation
+          # uploads it inline — no SAM-managed S3 bucket required.
+          aws cloudformation deploy \
+            --template-file template.yaml \
+            --stack-name "$STACK_NAME" \
+            --region "$REGION" \
+            --capabilities CAPABILITY_IAM \
+            --no-fail-on-empty-changeset
 
       - name: Read stack outputs
         id: outputs
         run: |
           STACK_NAME=$(grep 'stack_name' samconfig.toml | awk -F'"' '{print $2}')
+          REGION=$(grep 'region' samconfig.toml | awk -F'"' '{print $2}')
           OUTPUTS=$(aws cloudformation describe-stacks \
             --stack-name "$STACK_NAME" \
+            --region "$REGION" \
             --query 'Stacks[0].Outputs' \
             --output json)
 
