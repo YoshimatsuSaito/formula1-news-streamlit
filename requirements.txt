@@ -1,9 +1,5 @@
 beautifulsoup4
-ergast-py
+jinja2
 lxml
-numpy
-pandas
 requests
-streamlit
-tqdm
 PyYAML
