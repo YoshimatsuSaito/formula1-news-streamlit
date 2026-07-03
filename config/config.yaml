@@ -9,6 +9,26 @@ sites:
     scrape_link: "ul.news-list li a[href]"
     get_link: "lambda x: x['href']"
 
+  F1-Gate:
+    # RSS feed (/feed/) は存在しない（WordPress形式でないため）→ HTML scraping
+    source: html
+    prefix_home: ""
+    news_home: "https://f1-gate.com"
+    scrape_title: ".content h2 a"
+    get_title: "lambda x: x.get_text(strip=True)"
+    scrape_link: ".content h2 a"
+    get_link: "lambda x: x.attrs['href']"
+
+  F1情報通:
+    # FC2 Atom feed (?xml) はデフォルト5件固定のため HTML scraping に切替
+    source: html
+    prefix_home: ""
+    news_home: "http://f1jouhou2.blog.fc2.com"
+    scrape_title: ".index_title a"
+    get_title: "lambda x: x.get_text(strip=True)"
+    scrape_link: ".index_title a"
+    get_link: "lambda x: x.attrs['href']"
+
   # --- RSS feeds (JS-rendered sites → use RSS for reliability) ---
   motorsport-jp:
     source: rss
@@ -20,22 +40,18 @@ sites:
     news_home: "https://www.motorsport.com/f1/news/"
     rss_url: "https://www.motorsport.com/rss/f1/news/"
 
-  F1-Gate:
-    source: rss
-    news_home: "https://f1-gate.com"
-    rss_url: "https://f1-gate.com/feed/"
-
-  F1情報通:
-    source: rss
-    news_home: "http://f1jouhou2.blog.fc2.com"
-    rss_url: "http://f1jouhou2.blog.fc2.com/?xml"
-
   BBC:
     source: rss
     news_home: "https://www.bbc.com/sport/formula1"
     rss_url: "https://feeds.bbci.co.uk/sport/formula1/rss.xml"
 
   skysports:
-    source: rss
+    # rss/12040.xml は廃止済み → HTML scraping にフォールバック
+    # JS描画の場合は 0件スキップになるが 404エラーは出なくなる
+    source: html
+    prefix_home: "https://www.skysports.com"
     news_home: "https://www.skysports.com/f1/news"
-    rss_url: "https://www.skysports.com/rss/12040.xml"
+    scrape_title: "a.sdc-site-tile__headline-link span.sdc-site-tile__headline-text"
+    get_title: "lambda x: x.get_text(strip=True)"
+    scrape_link: "a.sdc-site-tile__headline-link"
+    get_link: "lambda x: x['href'] if x.has_attr('href') else ''"
