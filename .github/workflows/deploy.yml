@@ -9,10 +9,14 @@ permissions:
   id-token: write  # Required for OIDC auth (if using IAM role instead of keys)
   contents: read
 
+env:
+  STACK_NAME: f1-news-website
+  AWS_REGION: ap-northeast-1
+
 jobs:
-  # ── Job 1: Deploy / update AWS infrastructure via SAM ──────────────────────
+  # ── Job 1: Deploy / update AWS infrastructure via CloudFormation ───────────
   infrastructure:
-    name: SAM deploy (infra)
+    name: Deploy infrastructure
     runs-on: ubuntu-latest
     outputs:
       bucket_name:      ${{ steps.outputs.outputs.bucket_name }}
@@ -25,29 +29,23 @@ jobs:
         with:
           aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region:            ${{ secrets.AWS_REGION }}
+          aws-region:            ${{ env.AWS_REGION }}
 
       - name: Deploy CloudFormation stack
         run: |
-          STACK_NAME=$(grep 'stack_name' samconfig.toml | awk -F'"' '{print $2}')
-          REGION=$(grep 'region' samconfig.toml | awk -F'"' '{print $2}')
           # Template is < 51KB and has no packaged artifacts, so CloudFormation
           # uploads it inline — no SAM-managed S3 bucket required.
           aws cloudformation deploy \
             --template-file template.yaml \
             --stack-name "$STACK_NAME" \
-            --region "$REGION" \
             --capabilities CAPABILITY_IAM \
             --no-fail-on-empty-changeset
 
       - name: Read stack outputs
         id: outputs
         run: |
-          STACK_NAME=$(grep 'stack_name' samconfig.toml | awk -F'"' '{print $2}')
-          REGION=$(grep 'region' samconfig.toml | awk -F'"' '{print $2}')
           OUTPUTS=$(aws cloudformation describe-stacks \
             --stack-name "$STACK_NAME" \
-            --region "$REGION" \
             --query 'Stacks[0].Outputs' \
             --output json)
 
@@ -83,7 +81,7 @@ jobs:
         with:
           aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region:            ${{ secrets.AWS_REGION }}
+          aws-region:            ${{ env.AWS_REGION }}
 
       - name: Upload to S3
         run: |
