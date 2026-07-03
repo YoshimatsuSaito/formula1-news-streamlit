@@ -16,7 +16,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       bucket_name:      ${{ steps.outputs.outputs.bucket_name }}
-      distribution_id:  ${{ steps.outputs.outputs.distribution_id }}
       website_url:      ${{ steps.outputs.outputs.website_url }}
 
     steps:
@@ -45,11 +44,9 @@ jobs:
             --output json)
 
           BUCKET=$(echo "$OUTPUTS" | jq -r '.[] | select(.OutputKey=="BucketName") | .OutputValue')
-          DIST_ID=$(echo "$OUTPUTS" | jq -r '.[] | select(.OutputKey=="DistributionId") | .OutputValue')
           URL=$(echo "$OUTPUTS" | jq -r '.[] | select(.OutputKey=="WebsiteUrl") | .OutputValue')
 
           echo "bucket_name=$BUCKET"       >> "$GITHUB_OUTPUT"
-          echo "distribution_id=$DIST_ID"  >> "$GITHUB_OUTPUT"
           echo "website_url=$URL"          >> "$GITHUB_OUTPUT"
           echo "Website: $URL"
 
@@ -86,8 +83,6 @@ jobs:
             --content-type "text/html; charset=utf-8" \
             --cache-control "no-cache, max-age=0"
 
-      - name: Invalidate CloudFront cache
+      - name: Show website URL
         run: |
-          aws cloudfront create-invalidation \
-            --distribution-id ${{ needs.infrastructure.outputs.distribution_id }} \
-            --paths "/*"
+          echo "Deployed: ${{ needs.infrastructure.outputs.website_url }}"

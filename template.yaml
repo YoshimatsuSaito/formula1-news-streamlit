@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: F1 News static website - S3 + CloudFront
+Description: F1 News static website - S3 static website hosting
 
 Resources:
 
@@ -8,11 +8,20 @@ Resources:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Sub "${AWS::StackName}-website-${AWS::AccountId}"
+      # Serve the bucket as a static website (HTTP only)
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: index.html
+      # ACLs disabled; public access is granted via the bucket policy below
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      # Allow a public bucket policy (required for static website hosting)
       PublicAccessBlockConfiguration:
-        BlockPublicAcls: true
-        BlockPublicPolicy: true
-        IgnorePublicAcls: true
-        RestrictPublicBuckets: true
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
 
   WebsiteBucketPolicy:
     Type: AWS::S3::BucketPolicy
@@ -22,58 +31,15 @@ Resources:
         Version: "2012-10-17"
         Statement:
           - Effect: Allow
-            Principal:
-              Service: cloudfront.amazonaws.com
+            Principal: "*"
             Action: s3:GetObject
             Resource: !Sub "${WebsiteBucket.Arn}/*"
-            Condition:
-              StringEquals:
-                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}"
-
-  OriginAccessControl:
-    Type: AWS::CloudFront::OriginAccessControl
-    Properties:
-      OriginAccessControlConfig:
-        Name: !Sub "${AWS::StackName}-oac"
-        OriginAccessControlOriginType: s3
-        SigningBehavior: always
-        SigningProtocol: sigv4
-
-  CloudFrontDistribution:
-    Type: AWS::CloudFront::Distribution
-    Properties:
-      DistributionConfig:
-        Enabled: true
-        HttpVersion: http2and3
-        DefaultRootObject: index.html
-        PriceClass: PriceClass_100  # US/Europe/Asia
-        Origins:
-          - Id: S3Origin
-            DomainName: !GetAtt WebsiteBucket.RegionalDomainName
-            OriginAccessControlId: !GetAtt OriginAccessControl.Id
-            S3OriginConfig:
-              OriginAccessIdentity: ""
-        DefaultCacheBehavior:
-          TargetOriginId: S3Origin
-          ViewerProtocolPolicy: redirect-to-https
-          Compress: true
-          # CachingDisabled managed policy - always fetch from S3
-          # Content freshness is controlled by GitHub Actions invalidation
-          CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
-        CustomErrorResponses:
-          - ErrorCode: 403
-            ResponseCode: 200
-            ResponsePagePath: /index.html
 
 Outputs:
   BucketName:
     Description: S3 bucket name for website content
     Value: !Ref WebsiteBucket
 
-  DistributionId:
-    Description: CloudFront distribution ID
-    Value: !Ref CloudFrontDistribution
-
   WebsiteUrl:
-    Description: Public URL of the website
-    Value: !Sub "https://${CloudFrontDistribution.DomainName}"
+    Description: Public URL of the website (S3 static website endpoint, HTTP)
+    Value: !GetAtt WebsiteBucket.WebsiteURL
