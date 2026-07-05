@@ -20,14 +20,11 @@ sites:
     get_link: "lambda x: x.attrs['href']"
 
   F1情報通:
-    # FC2 Atom feed (?xml) はデフォルト5件固定のため HTML scraping に切替
-    source: html
-    prefix_home: ""
+    # HTML scraping は GitHub Actions IP をブロックされるため Atom feed に切替
+    # 件数は5件固定だが安定性を優先
+    source: rss
     news_home: "http://f1jouhou2.blog.fc2.com"
-    scrape_title: ".index_title a"
-    get_title: "lambda x: x.get_text(strip=True)"
-    scrape_link: ".index_title a"
-    get_link: "lambda x: x.attrs['href']"
+    rss_url: "http://f1jouhou2.blog.fc2.com/?xml"
 
   # --- RSS feeds (JS-rendered sites → use RSS for reliability) ---
   motorsport-jp:
