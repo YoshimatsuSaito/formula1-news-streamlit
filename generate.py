@@ -5,6 +5,7 @@ from datetime import datetime, timezone, timedelta
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from modules.load_config import load_config
+from modules.schedule import fetch_season_schedule
 from modules.scraper import scrape_news
 from modules.structure import ResultStructure
 
@@ -26,8 +27,16 @@ def main() -> None:
         except Exception as e:
             print(f"[FAIL] {name}: {e}")
 
+    year = datetime.now(JST).year
+    schedule = []
+    try:
+        schedule = fetch_season_schedule(year)
+        print(f"[OK] schedule: {len(schedule)} rounds (year={year})")
+    except Exception as e:
+        print(f"[WARN] schedule: {e}")
+
     updated_at = datetime.now(JST).strftime("%Y-%m-%d %H:%M JST")
-    html = _render(sources, updated_at)
+    html = _render(sources, schedule, year, updated_at)
     Path("index.html").write_text(html, encoding="utf-8")
     print(f"\nGenerated index.html ({len(sources)} sources, {updated_at})")
 
@@ -46,7 +55,7 @@ def _to_template_source(result: ResultStructure, url: str) -> dict:
     }
 
 
-def _render(sources: list[dict], updated_at: str) -> str:
+def _render(sources: list[dict], schedule: list[dict], year: int, updated_at: str) -> str:
     env = Environment(
         loader=FileSystemLoader("templates"),
         autoescape=select_autoescape(["html"]),
@@ -55,6 +64,8 @@ def _render(sources: list[dict], updated_at: str) -> str:
     return template.render(
         sources=sources,
         source_keys_json=json.dumps([s["key"] for s in sources]),
+        schedule=schedule,
+        current_year=year,
         updated_at=updated_at,
     )
 

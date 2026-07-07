@@ -23,7 +23,6 @@
     }
     :root[data-theme="light"],
     :root:not([data-theme="dark"]):has(+ * + * + *) {
-      /* light overrides applied via Alpine :data-theme */
       --bg:        #f4f4f2;
       --surface:   #ffffff;
       --line:      #e2e2e2;
@@ -117,9 +116,32 @@
     }
     .theme-btn:hover { border-color: var(--muted); color: var(--text); }
 
+    /* ── Tab bar ─────────────────────────────────────────────── */
+    .tab-bar {
+      display: flex;
+      padding: 0 24px;
+      gap: 0;
+    }
+    .tab-btn {
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      padding: 6px 14px 5px;
+      margin-bottom: -1px;
+      transition: color 0.12s, border-color 0.12s;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.tab-active { color: var(--text); border-bottom-color: var(--red); }
+
     /* ── Filter bar ──────────────────────────────────────────── */
     .filter-bar {
-      padding: 0 24px 12px;
+      padding: 10px 24px 12px;
       display: flex;
       align-items: center;
       gap: 10px;
@@ -226,6 +248,107 @@
     }
     .article-link:hover { color: var(--red); }
 
+    /* ── Schedule section ───────────────────────────────────── */
+    .sched-wrap {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .sched-section-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+    .round-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1px;
+      background: var(--line);
+      margin-bottom: 28px;
+    }
+    .round-card {
+      background: var(--surface);
+      padding: 18px 20px 14px;
+      border-left: 3px solid transparent;
+    }
+    .round-next { border-left-color: var(--red); }
+    .next-badge {
+      display: inline-block;
+      background: var(--red);
+      color: #fff;
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      padding: 1px 6px;
+      border-radius: 2px;
+      margin-bottom: 6px;
+    }
+    .round-num {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+    }
+    .round-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.3;
+      margin: 3px 0 2px;
+    }
+    .round-loc {
+      font-size: 11px;
+      color: var(--label);
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--line);
+    }
+    .session-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 0;
+      border-bottom: 1px solid var(--line);
+      gap: 8px;
+      transition: opacity 0.12s;
+    }
+    .session-row:last-child { border-bottom: none; }
+    .session-row.session-past { opacity: 0.4; }
+    .session-label {
+      font-size: 11px;
+      color: var(--label);
+      flex-shrink: 0;
+    }
+    .session-time {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text);
+      white-space: nowrap;
+    }
+    .sched-divider {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      text-transform: uppercase;
+      text-align: center;
+      padding: 10px 0;
+      margin-bottom: 20px;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+    .round-grid-past { opacity: 0.38; }
+    .sched-empty {
+      color: var(--muted);
+      font-size: 13px;
+      padding: 48px 0;
+      text-align: center;
+    }
+
     /* ── Footer ──────────────────────────────────────────────── */
     footer {
       text-align: center;
@@ -241,9 +364,12 @@
     /* ── Responsive ──────────────────────────────────────────── */
     @media (max-width: 640px) {
       .header-top { padding: 12px 16px 8px; }
-      .filter-bar  { padding: 0 16px 10px; }
+      .tab-bar { padding: 0 16px; }
+      .filter-bar  { padding: 8px 16px 10px; }
       main { padding: 0; grid-template-columns: 1fr; }
       .source-block { padding: 16px; }
+      .sched-wrap { padding: 16px; }
+      .round-grid { grid-template-columns: 1fr; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -266,7 +392,11 @@
       </button>
     </div>
   </div>
-  <div class="filter-bar">
+  <div class="tab-bar">
+    <button class="tab-btn" :class="{ 'tab-active': tab === 'news' }" @click="tab = 'news'">NEWS</button>
+    <button class="tab-btn" :class="{ 'tab-active': tab === 'schedule' }" @click="tab = 'schedule'">SCHEDULE</button>
+  </div>
+  <div class="filter-bar" x-show="tab === 'news'">
     <span class="filter-label">Source</span>
     <div class="chips">
       <button
@@ -285,7 +415,7 @@
   </div>
 </header>
 
-<main>
+<main x-show="tab === 'news'">
   {% for source in sources %}
   <div
     class="source-block"
@@ -307,6 +437,58 @@
   {% endfor %}
 </main>
 
+{% set upcoming = schedule | selectattr("is_past", "equalto", false) | list %}
+{% set past = schedule | selectattr("is_past") | list %}
+
+<section class="sched-wrap" x-show="tab === 'schedule'">
+  {% if schedule %}
+    {% if upcoming %}
+    <div class="sched-section-label">UPCOMING &mdash; {{ current_year }}</div>
+    <div class="round-grid">
+      {% for r in upcoming %}
+      <div class="round-card{% if r.is_next %} round-next{% endif %}">
+        {% if r.is_next %}<div class="next-badge">NEXT</div>{% endif %}
+        <div class="round-num">{{ "RD %02d" | format(r.round) }}</div>
+        <div class="round-name">{{ r.name }}</div>
+        <div class="round-loc">{{ r.circuit }}&nbsp;&middot;&nbsp;{{ r.country }}</div>
+        {% for s in r.sessions %}
+        <div class="session-row{% if s.is_past %} session-past{% endif %}">
+          <span class="session-label">{{ s.label }}</span>
+          <span class="session-time">{{ s.dt_jst }}&thinsp;JST</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if past %}
+    <div class="sched-divider">{{ past | length }} round{{ 's' if past | length != 1 else '' }} completed</div>
+    <div class="round-grid round-grid-past">
+      {% for r in past | reverse %}
+      <div class="round-card">
+        <div class="round-num">{{ "RD %02d" | format(r.round) }}</div>
+        <div class="round-name">{{ r.name }}</div>
+        <div class="round-loc">{{ r.circuit }}&nbsp;&middot;&nbsp;{{ r.country }}</div>
+        {% for s in r.sessions %}
+        <div class="session-row session-past">
+          <span class="session-label">{{ s.label }}</span>
+          <span class="session-time">{{ s.dt_jst }}&thinsp;JST</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if not upcoming and not past %}
+    <div class="sched-empty">No schedule data for {{ current_year }}.</div>
+    {% endif %}
+  {% else %}
+  <div class="sched-empty">Schedule data unavailable.</div>
+  {% endif %}
+</section>
+
 <footer>AUTO-UPDATED EVERY 30 MIN &nbsp;&middot;&nbsp; GITHUB ACTIONS + S3</footer>
 
 <script>
@@ -317,6 +499,7 @@
     const osLight = window.matchMedia('(prefers-color-scheme: light)').matches;
     return {
       theme:  saved || (osLight ? 'light' : 'dark'),
+      tab:    'news',
       active: new Set(SOURCE_KEYS),
 
       get allActive() { return this.active.size === SOURCE_KEYS.length; },
