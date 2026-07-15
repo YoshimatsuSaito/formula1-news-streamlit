@@ -249,6 +249,121 @@
     }
     .article-link:hover { color: var(--red); }
 
+    /* ── Trends section ─────────────────────────────────────── */
+    .trends-wrap {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .trends-intro {
+      font-size: 12px;
+      color: var(--label);
+      line-height: 1.6;
+      margin-bottom: 22px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--line);
+    }
+    .trends-intro b { color: var(--text); font-weight: 700; }
+    .trends-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1px;
+      background: var(--line);
+    }
+    .trend-card {
+      background: var(--surface);
+      padding: 20px 22px 18px;
+    }
+    .trend-card-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--red);
+    }
+    .trend-card-title {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+    .trend-card-sub {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--muted);
+    }
+    .bar-row {
+      display: grid;
+      grid-template-columns: 16px 104px 1fr 26px;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 0;
+    }
+    .bar-rank {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--muted);
+      text-align: right;
+    }
+    .bar-name {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .bar-track {
+      position: relative;
+      background: var(--chip-bg);
+      border-radius: 3px;
+      height: 8px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      position: absolute;
+      inset: 0 auto 0 0;
+      height: 100%;
+      background: linear-gradient(90deg, var(--red), #ff4d47);
+      border-radius: 3px;
+      min-width: 3px;
+      transition: width 0.3s;
+    }
+    .bar-count {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--label);
+      text-align: right;
+    }
+    .keyword-cloud {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .keyword-tag {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 5px;
+      background: var(--chip-bg);
+      border-radius: 3px;
+      padding: 5px 10px;
+      color: var(--chip-txt);
+    }
+    .keyword-tag .kw-count {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--red);
+      font-weight: 700;
+    }
+    .trends-empty {
+      color: var(--muted);
+      font-size: 13px;
+      padding: 48px 0;
+      text-align: center;
+    }
+
     /* ── Schedule section ───────────────────────────────────── */
     .sched-wrap {
       max-width: 1280px;
@@ -395,6 +510,7 @@
   </div>
   <div class="tab-bar">
     <button class="tab-btn" :class="{ 'tab-active': tab === 'news' }" @click="tab = 'news'">NEWS</button>
+    <button class="tab-btn" :class="{ 'tab-active': tab === 'trends' }" @click="tab = 'trends'">TRENDS</button>
     <button class="tab-btn" :class="{ 'tab-active': tab === 'schedule' }" @click="tab = 'schedule'">SCHEDULE</button>
   </div>
   <div class="filter-bar" x-show="tab === 'news'">
@@ -437,6 +553,75 @@
   </div>
   {% endfor %}
 </main>
+
+{% macro bar_list(items, name_key) -%}
+  {% for it in items %}
+  <div class="bar-row">
+    <span class="bar-rank">{{ "%02d" | format(loop.index) }}</span>
+    <span class="bar-name" title="{{ it[name_key] }}">{{ it[name_key] }}</span>
+    <div class="bar-track">
+      <div class="bar-fill" style="width: {{ [it.pct, 6] | max }}%"></div>
+    </div>
+    <span class="bar-count">{{ it.count }}</span>
+  </div>
+  {% endfor %}
+{%- endmacro %}
+
+<section class="trends-wrap" x-show="tab === 'trends'">
+  {% if trends and trends.total_articles and (trends.drivers or trends.teams or trends.topics) %}
+  <div class="trends-intro">
+    直近 <b>{{ trends.total_articles }}</b> 本の記事タイトルを解析し、言及の多いキーワードを集計しています。
+    数字は「言及した記事数」です。<b>LLM不使用・辞書ベースの簡易解析</b>のため、目安としてご覧ください。
+  </div>
+  <div class="trends-grid">
+    {% if trends.drivers %}
+    <div class="trend-card">
+      <div class="trend-card-head">
+        <span class="trend-card-title">Hot Drivers</span>
+        <span class="trend-card-sub">記事数</span>
+      </div>
+      {{ bar_list(trends.drivers, "name") }}
+    </div>
+    {% endif %}
+
+    {% if trends.teams %}
+    <div class="trend-card">
+      <div class="trend-card-head">
+        <span class="trend-card-title">Hot Teams</span>
+        <span class="trend-card-sub">記事数</span>
+      </div>
+      {{ bar_list(trends.teams, "name") }}
+    </div>
+    {% endif %}
+
+    {% if trends.topics %}
+    <div class="trend-card">
+      <div class="trend-card-head">
+        <span class="trend-card-title">Topics</span>
+        <span class="trend-card-sub">記事数</span>
+      </div>
+      {{ bar_list(trends.topics, "name") }}
+    </div>
+    {% endif %}
+
+    {% if trends.keywords %}
+    <div class="trend-card">
+      <div class="trend-card-head">
+        <span class="trend-card-title">Trending Keywords</span>
+        <span class="trend-card-sub">辞書外の頻出語</span>
+      </div>
+      <div class="keyword-cloud">
+        {% for kw in trends.keywords %}
+        <span class="keyword-tag">{{ kw.term }}<span class="kw-count">{{ kw.count }}</span></span>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="trends-empty">トレンドデータを算出できませんでした。</div>
+  {% endif %}
+</section>
 
 {% set upcoming = schedule | selectattr("is_past", "equalto", false) | list %}
 {% set past = schedule | selectattr("is_past") | list %}
