@@ -47,6 +47,7 @@
     }
 
     /* ── Reset ──────────────────────────────────────────────── */
+    [x-cloak] { display: none !important; }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: smooth; }
     body {
@@ -294,12 +295,15 @@
       font-size: 10px;
       color: var(--muted);
     }
+    .bar-item { border-bottom: 1px solid var(--line); }
+    .bar-item:last-child { border-bottom: none; }
     .bar-row {
       display: grid;
-      grid-template-columns: 16px 104px 1fr 26px;
+      grid-template-columns: 16px 100px 1fr 24px 12px;
       align-items: center;
       gap: 10px;
-      padding: 6px 0;
+      padding: 7px 0;
+      cursor: pointer;
     }
     .bar-rank {
       font-family: var(--mono);
@@ -314,7 +318,9 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      transition: color 0.12s;
     }
+    .bar-row:hover .bar-name { color: var(--red); }
     .bar-track {
       position: relative;
       background: var(--chip-bg);
@@ -337,6 +343,48 @@
       color: var(--label);
       text-align: right;
     }
+    .bar-caret {
+      font-family: var(--mono);
+      font-size: 14px;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1;
+      transition: transform 0.15s, color 0.15s;
+    }
+    .bar-caret.caret-open { transform: rotate(90deg); color: var(--red); }
+
+    /* ── Article drill-down list (shared by bars & keywords) ─── */
+    .bar-articles {
+      list-style: none;
+      margin: 0 0 8px;
+      padding: 4px 0 6px 26px;
+      border-left: 2px solid var(--red);
+      margin-left: 6px;
+    }
+    .kw-articles { margin-top: 10px; }
+    .bar-art {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 5px 0;
+    }
+    .bar-art-link {
+      color: var(--label);
+      text-decoration: none;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .bar-art-link:hover { color: var(--red); }
+    .bar-art-src {
+      font-family: var(--mono);
+      font-size: 9px;
+      color: var(--muted);
+      white-space: nowrap;
+      flex-shrink: 0;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
     .keyword-cloud {
       display: flex;
       flex-wrap: wrap;
@@ -347,16 +395,25 @@
       align-items: baseline;
       gap: 5px;
       background: var(--chip-bg);
+      border: none;
       border-radius: 3px;
       padding: 5px 10px;
       color: var(--chip-txt);
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 600;
+      transition: background 0.12s, color 0.12s;
     }
+    .keyword-tag:hover { color: var(--red); }
+    .keyword-tag.kw-active { background: var(--chip-on); color: var(--chip-on-txt); }
     .keyword-tag .kw-count {
       font-family: var(--mono);
       font-size: 10px;
       color: var(--red);
       font-weight: 700;
     }
+    .keyword-tag.kw-active:hover { color: var(--chip-on-txt); }
+    .keyword-tag.kw-active .kw-count { color: #fff; }
     .trends-empty {
       color: var(--muted);
       font-size: 13px;
@@ -556,13 +613,32 @@
 
 {% macro bar_list(items, name_key) -%}
   {% for it in items %}
-  <div class="bar-row">
-    <span class="bar-rank">{{ "%02d" | format(loop.index) }}</span>
-    <span class="bar-name" title="{{ it[name_key] }}">{{ it[name_key] }}</span>
-    <div class="bar-track">
-      <div class="bar-fill" style="width: {{ [it.pct, 6] | max }}%"></div>
+  <div class="bar-item" x-data="{ open: false }">
+    <div
+      class="bar-row"
+      @click="open = !open"
+      role="button"
+      tabindex="0"
+      @keydown.enter="open = !open"
+      @keydown.space.prevent="open = !open"
+      :aria-expanded="String(open)"
+    >
+      <span class="bar-rank">{{ "%02d" | format(loop.index) }}</span>
+      <span class="bar-name" title="{{ it[name_key] }}">{{ it[name_key] }}</span>
+      <div class="bar-track">
+        <div class="bar-fill" style="width: {{ [it.pct, 6] | max }}%"></div>
+      </div>
+      <span class="bar-count">{{ it.count }}</span>
+      <span class="bar-caret" :class="{ 'caret-open': open }">&rsaquo;</span>
     </div>
-    <span class="bar-count">{{ it.count }}</span>
+    <ul class="bar-articles" x-show="open" x-transition.opacity x-cloak>
+      {% for a in (it.articles or []) %}
+      <li class="bar-art">
+        <a class="bar-art-link" href="{{ a.link }}" target="_blank" rel="noopener noreferrer">{{ a.title }}</a>
+        {% if a.source %}<span class="bar-art-src">{{ a.source }}</span>{% endif %}
+      </li>
+      {% endfor %}
+    </ul>
   </div>
   {% endfor %}
 {%- endmacro %}
@@ -605,16 +681,30 @@
     {% endif %}
 
     {% if trends.keywords %}
-    <div class="trend-card">
+    <div class="trend-card" x-data="{ sel: null }">
       <div class="trend-card-head">
         <span class="trend-card-title">Trending Keywords</span>
         <span class="trend-card-sub">辞書外の頻出語</span>
       </div>
       <div class="keyword-cloud">
         {% for kw in trends.keywords %}
-        <span class="keyword-tag">{{ kw.term }}<span class="kw-count">{{ kw.count }}</span></span>
+        <button
+          class="keyword-tag"
+          :class="{ 'kw-active': sel === {{ loop.index }} }"
+          @click="sel = (sel === {{ loop.index }} ? null : {{ loop.index }})"
+        >{{ kw.term }}<span class="kw-count">{{ kw.count }}</span></button>
         {% endfor %}
       </div>
+      {% for kw in trends.keywords %}
+      <ul class="bar-articles kw-articles" x-show="sel === {{ loop.index }}" x-transition.opacity x-cloak>
+        {% for a in (kw.articles or []) %}
+        <li class="bar-art">
+          <a class="bar-art-link" href="{{ a.link }}" target="_blank" rel="noopener noreferrer">{{ a.title }}</a>
+          {% if a.source %}<span class="bar-art-src">{{ a.source }}</span>{% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+      {% endfor %}
     </div>
     {% endif %}
   </div>
