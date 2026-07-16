@@ -10,7 +10,6 @@
 """
 
 import re
-from collections import Counter
 
 # ── 別名辞書 ────────────────────────────────────────────────────────────
 # (表示名, [別名...]) — 別名は日本語(部分一致)と英語(単語境界一致)を混在させてよい。
@@ -101,25 +100,47 @@ _STOPWORDS: set[str] = {
     "f1", "gp", "grand", "prix", "news", "формулу",
 }
 
-_MIN_KEYWORD_COUNT = 2   # この件数未満のキーワードは表示しない
+_MIN_KEYWORD_COUNT = 2      # この件数未満のキーワードは表示しない
 _TOP_KEYWORDS = 15
+_ARTICLES_PER_ITEM = 15     # 1トレンド項目に紐づける記事リンクの上限
 
 
-def _iter_titles(sources: list[dict]):
-    """全ソースの記事タイトルを順に返す。"""
+def _iter_articles(sources: list[dict]) -> list[dict]:
+    """全ソースの記事を {title, link, source} のリストとして返す。"""
+    out: list[dict] = []
     for src in sources:
+        source_name = src.get("name", "")
         for art in src.get("articles", []):
             title = art.get("title") or ""
             if title:
-                yield title
+                out.append({
+                    "title": title,
+                    "link": art.get("link") or "",
+                    "source": source_name,
+                })
+    return out
+
+
+def _finalize(items: list[dict], limit: int | None = None) -> list[dict]:
+    """件数で降順ソートし、上位を切り出して pct を付与する。"""
+    items.sort(key=lambda d: d["count"], reverse=True)
+    if limit is not None:
+        items = items[:limit]
+    if items:
+        top = items[0]["count"]
+        for d in items:
+            d["pct"] = round(d["count"] / top * 100)
+    return items
 
 
 def _count_gazetteer(
-    titles: list[str], entries: list[tuple[str, list[str]]]
+    articles: list[dict],
+    entries: list[tuple[str, list[str]]],
+    limit: int | None = None,
 ) -> list[dict]:
-    """辞書エントリごとに「言及した記事数」を数えて降順で返す。"""
-    counts: Counter = Counter()
-    lowered = [t.lower() for t in titles]
+    """辞書エントリごとに、言及した記事を集めて降順で返す。"""
+    lowered = [a["title"].lower() for a in articles]
+    results: list[dict] = []
 
     for name, aliases in entries:
         # 英語別名は単語境界、日本語別名は部分一致で判定する
@@ -130,12 +151,12 @@ def _count_gazetteer(
             else:
                 matchers.append(("in", a))
 
-        n = 0
-        for orig, low in zip(titles, lowered):
+        matched: list[dict] = []
+        for art, low in zip(articles, lowered):
             hit = False
             for kind, m in matchers:
                 if kind == "in":
-                    if m in orig:
+                    if m in art["title"]:
                         hit = True
                         break
                 else:
@@ -143,19 +164,25 @@ def _count_gazetteer(
                         hit = True
                         break
             if hit:
-                n += 1
-        if n > 0:
-            counts[name] = n
+                matched.append(art)
 
-    return _ranked(counts)
+        if matched:
+            results.append({
+                "name": name,
+                "count": len(matched),
+                "articles": matched[:_ARTICLES_PER_ITEM],
+            })
+
+    return _finalize(results, limit)
 
 
-def _count_keywords(titles: list[str], exclude: set[str]) -> list[dict]:
-    """辞書に無い語を頻度解析でホットキーワードとして抽出する。"""
-    counts: Counter = Counter()
+def _count_keywords(articles: list[dict], exclude: set[str]) -> list[dict]:
+    """辞書に無い語を頻度解析でホットキーワードとして抽出し、記事を紐づける。"""
+    term_articles: dict[str, list[dict]] = {}
     exclude_low = {e.lower() for e in exclude}
 
-    for title in titles:
+    for art in articles:
+        title = art["title"]
         # 1タイトル内の重複は1回に丸める
         terms: set[str] = set()
         terms.update(_RE_KATAKANA.findall(title))
@@ -168,41 +195,38 @@ def _count_keywords(titles: list[str], exclude: set[str]) -> list[dict]:
                 continue
             if key in exclude_low:
                 continue
-            counts[term] += 1
+            term_articles.setdefault(term, []).append(art)
 
-    filtered = Counter({k: v for k, v in counts.items() if v >= _MIN_KEYWORD_COUNT})
-    return _ranked(filtered, limit=_TOP_KEYWORDS, key_name="term")
-
-
-def _ranked(counts: Counter, limit: int | None = None, key_name: str = "name") -> list[dict]:
-    """Counter を [{name/term, count, pct}] のリストにして降順で返す。"""
-    items = counts.most_common(limit)
-    if not items:
-        return []
-    top = items[0][1]
-    return [
-        {key_name: k, "count": v, "pct": round(v / top * 100)}
-        for k, v in items
+    results = [
+        {"term": term, "count": len(arts), "articles": arts[:_ARTICLES_PER_ITEM]}
+        for term, arts in term_articles.items()
+        if len(arts) >= _MIN_KEYWORD_COUNT
     ]
+    # _finalize は "name" ではなく汎用に件数でソートするだけなのでそのまま使える
+    return _finalize(results, _TOP_KEYWORDS)
 
 
 def analyze_trends(sources: list[dict], top_drivers: int = 10, top_teams: int = 10) -> dict:
-    """収集済みソースからトレンド情報を算出して返す。"""
-    titles = list(_iter_titles(sources))
+    """収集済みソースからトレンド情報を算出して返す。
 
-    drivers = _count_gazetteer(titles, _DRIVERS)[:top_drivers]
-    teams = _count_gazetteer(titles, _TEAMS)[:top_teams]
-    topics = _count_gazetteer(titles, _TOPICS)
+    各トレンド項目には、その語に言及した記事 (title / link / source) の
+    リストを ``articles`` として紐づける。
+    """
+    articles = _iter_articles(sources)
+
+    drivers = _count_gazetteer(articles, _DRIVERS, top_drivers)
+    teams = _count_gazetteer(articles, _TEAMS, top_teams)
+    topics = _count_gazetteer(articles, _TOPICS)
 
     # 既に別カードで表示している辞書語(ドライバー/チーム/トピック)は
     # キーワードから除外し、「辞書外の頻出語」だけを残す
     exclude: set[str] = set()
     for _, aliases in _DRIVERS + _TEAMS + _TOPICS:
         exclude.update(aliases)
-    keywords = _count_keywords(titles, exclude)
+    keywords = _count_keywords(articles, exclude)
 
     return {
-        "total_articles": len(titles),
+        "total_articles": len(articles),
         "drivers": drivers,
         "teams": teams,
         "topics": topics,
